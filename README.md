@@ -8,6 +8,16 @@
 
 A modernized, high-performance **Visual Object Tracking (VOT)** system combining **Convolutional Neural Networks (CNN)** for spatial feature representation and **Stacked Long Short-Term Memory (LSTM)** recurrent networks for temporal motion modeling and occlusion handling, based on the **ROLO (Recurrent YOLO)** architecture.
 
+> [!NOTE]
+> **Lineage & Enhancement Notice**: This project is a modernized, refactored, and significantly enhanced version of the original CNN+RNN tracker created by **[Mayuri Deshpande (@mayuri0192)](https://github.com/mayuri0192/Object-Tracking-using-CNN-and-RNN)**.
+> 
+> **Key Enhancements in this Version**:
+> - **Python 3.12 & PyTorch Modernization**: Migrated legacy Python 2 / TensorFlow 1.x code to PyTorch 2.x and Python 3.12 with clean modular design.
+> - **YOLOv8 CNN Backbone**: Integrated Ultralytics YOLOv8 for high-fidelity visual feature extraction and precise proposal boxes.
+> - **Interactive Live Web App**: Added a real-time web application with WebGL GPU acceleration and server-side streaming.
+> - **Novel "Any Object" Drag-to-Track**: Added real-time classification (1,000 ImageNet categories via MobileNet) and template-matching tracking for unconstrained targets.
+> - **Clean Architecture**: Modularized into reusable `src/` packages, streamlined training/testing pipelines, and automated slide presentation generation.
+
 ---
 
 ## 📸 Live Web Dashboard & Telemetry
@@ -185,6 +195,7 @@ Input Video Sequence (6 Frames)
 
 ## 📚 References & Acknowledgments
 
-- **ROLO**: Ning, Guanghan, et al. *"Spatially Supervised Recurrent Convolutional Neural Networks for Visual Object Tracking."* [arXiv:1607.05781](https://arxiv.org/abs/1607.05781).
-- **YOLO**: Redmon, Joseph, et al. *"You Only Look Once: Unified, Real-Time Object Detection."* [arXiv:1506.02640](https://arxiv.org/abs/1506.02640).
+- **Original Base Model & Author**: **Mayuri Deshpande** ([@mayuri0192](https://github.com/mayuri0192)) — original repository: [Object-Tracking-using-CNN-and-RNN](https://github.com/mayuri0192/Object-Tracking-using-CNN-and-RNN). Sincere credit and appreciation to Mayuri for the foundational architecture that inspired this enhanced project!
+- **ROLO Paper**: Ning, Guanghan, et al. *"Spatially Supervised Recurrent Convolutional Neural Networks for Visual Object Tracking."* [arXiv:1607.05781](https://arxiv.org/abs/1607.05781).
+- **YOLO Paper**: Redmon, Joseph, et al. *"You Only Look Once: Unified, Real-Time Object Detection."* [arXiv:1506.02640](https://arxiv.org/abs/1506.02640).
 - **Ultralytics YOLOv8**: [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics).
