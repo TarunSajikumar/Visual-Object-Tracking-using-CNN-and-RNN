@@ -1,12 +1,22 @@
+# Virtual environment & Python cache
 .venv/
 __pycache__/
 *.py[cod]
-Data/
+
+# Outputs & Video recordings
 Output/
 output/
-weights/
-*.pt
-*.pth
-*.ckpt
+results/
 *.mp4
 *.avi
+
+# Datasets (keep sample frames for testing)
+Data/*
+data/*
+!data/sample_frames/
+!data/sample_frames/*
+
+# Large weights (keep model checkpoints)
+weights/*
+!weights/tracker_model.pt
+!weights/yolov8n.pt
