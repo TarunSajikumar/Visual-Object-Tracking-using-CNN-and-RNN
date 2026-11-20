@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CNN + RNN Live Object Tracker</title>
+  <link rel="stylesheet" href="styles.css?v=3" />
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js" defer></script>
+  <script src="app.js?v=3" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-mark">
+        <span class="pulse-dot" id="statusDot"></span>
+      </div>
+      <div>
+        <h1>CNN + RNN Live Object Tracker</h1>
+        <p class="subtitle">Real-Time CNN Detection (80 + 1000 Classes) &amp; Recurrent Visual Tracking</p>
+      </div>
+    </div>
+
+    <div class="header-badges">
+      <div class="pill" id="engineBadge">
+        <span class="pill-dot"></span>
+        <span>Initializing Engine…</span>
+      </div>
+      <div class="pill pill-fps" id="fpsBadge">0.0 FPS</div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- Left: Live Camera Stage -->
+    <section class="stage-card">
+      <div class="video-stage" id="videoStage">
+        <video id="webcamVideo" autoplay playsinline muted></video>
+        <canvas id="overlayCanvas"></canvas>
+
+        <!-- Floating Live HUD -->
+        <div class="hud-top hidden" id="hudTop">
+          <span class="hud-chip hud-live"><i class="live-dot"></i>LIVE</span>
+          <span class="hud-chip" id="resolutionText">0 × 0</span>
+          <span class="hud-chip" id="hudTargetChip">Searching…</span>
+        </div>
+
+        <!-- Idle Welcome Overlay -->
+        <div class="stage-placeholder" id="stagePlaceholder">
+          <div class="placeholder-icon">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h9a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"/>
+            </svg>
+          </div>
+          <h2>Live Vision Tracker Ready</h2>
+          <p>Start your webcam to detect objects automatically, or <strong>drag a box around any object (like a pen)</strong> to identify &amp; track it in real time.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-lg" id="heroStartBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              Start Live Camera
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom Legend inside Stage -->
+        <div class="stage-legend">
+          <span class="legend-item"><i class="swatch swatch-cnn"></i>CNN Detection</span>
+          <span class="legend-item"><i class="swatch swatch-rnn"></i>RNN Tracked Target</span>
+          <span class="legend-item"><i class="swatch swatch-trail"></i>Motion Trail</span>
+        </div>
+      </div>
+
+      <div class="stage-footer">
+        <div class="footer-left">
+          <span class="footer-tip" id="footerTip">Click a detected box to lock, or <strong>click &amp; drag</strong> a box around any object (pen, keys, watch…) to identify &amp; track it!</span>
+        </div>
+        <div class="footer-controls">
+          <label class="toggle-chip" title="Mirror webcam horizontally">
+            <input type="checkbox" id="mirrorToggle" checked />
+            <span>Mirror Cam</span>
+          </label>
+          <label class="toggle-chip" title="Show motion trajectory trail">
+            <input type="checkbox" id="trailToggle" checked />
+            <span>Show Trail</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Controls & Telemetry Sidebar -->
+    <aside class="sidebar">
+      <!-- Source Controls -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Camera &amp; Source</h3>
+          <span class="panel-tag" id="sourceTag">Idle</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="startCamBtn">Start Camera</button>
+          <button class="btn btn-danger" id="stopCamBtn" disabled>Stop</button>
+        </div>
+        <label class="file-upload-btn">
+          <input type="file" id="videoUpload" accept="video/*" hidden />
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          <span>Load Local Video (.mp4 / .webm)</span>
+        </label>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="resetTrackBtn">Reset Lock</button>
+          <button class="btn btn-secondary" id="snapshotBtn" disabled>Snapshot</button>
+        </div>
+      </div>
+
+      <!-- Tracking Mode & Controls -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Tracking Mode</h3>
+          <span class="panel-tag" id="modeTag">Auto + Drag</span>
+        </div>
+
+        <div class="mode-switch" id="modeSwitch">
+          <button class="mode-btn active" data-mode="auto">Auto Detect (80)</button>
+          <button class="mode-btn" data-mode="custom">Any Object (1000)</button>
+        </div>
+
+        <div class="field" id="classFilterWrap">
+          <span>Quick Target Filter</span>
+          <div class="chip-grid" id="classChips">
+            <button class="chip active" data-class="all">All</button>
+            <button class="chip" data-class="person">Person</button>
+            <button class="chip" data-class="cell phone">Phone</button>
+            <button class="chip" data-class="bottle">Bottle</button>
+            <button class="chip" data-class="cup">Cup</button>
+            <button class="chip" data-class="laptop">Laptop</button>
+            <button class="chip" data-class="car">Car</button>
+            <button class="chip" data-class="book">Book</button>
+          </div>
+        </div>
+
+        <label class="field">
+          <div class="field-row">
+            <span>Confidence Threshold</span>
+            <strong id="confValue">30%</strong>
+          </div>
+          <input type="range" id="confSlider" min="15" max="85" value="30" />
+        </label>
+
+        <label class="field">
+          <span>Inference Engine</span>
+          <select id="engineSelect">
+            <option value="browser">Browser WebGL CNN + RNN (Fast GPU)</option>
+            <option value="python">Python Backend (YOLOv8 + PyTorch LSTM)</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Telemetry -->
+      <div class="panel panel-grow">
+        <div class="panel-header">
+          <h3>Live Telemetry</h3>
+          <span class="state-pill" id="metricState">IDLE</span>
+        </div>
+
+        <div class="target-card">
+          <div class="target-top">
+            <span class="target-name" id="metricLabel">No Target</span>
+            <span class="target-conf" id="metricConf">0%</span>
+          </div>
+          <div class="conf-bar-bg">
+            <div class="conf-bar-fill" id="confBarFill"></div>
+          </div>
+          <div class="target-meta">
+            <span>Box: <code id="metricBox">—</code></span>
+            <span>Objects: <strong id="metricCount">0</strong></span>
+          </div>
+        </div>
+
+        <div class="detected-section">
+          <span class="metric-label">Detected Objects (click to track)</span>
+          <div class="detected-list" id="detectedList">
+            <span class="empty-msg">Start camera to see live detections</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>
